@@ -11,12 +11,13 @@ import firebase from "../database/firebaseDB";
 
 export default function NotesScreen({ navigation, route }) {
   const [notes, setNotes] = useState([]);
+
   const db = firebase.firestore().collection("todos")
   //Load up firebase database on start
   //Snapshot keeps everything synced -- no need to do it again
   useEffect(()=>{
     const unsubscribe = db
-    .orderBy("created") //snapshot has a listener, a function that runs everytime collection change so it will run the collection function
+    .orderBy("created","desc") //snapshot has a listener, a function that runs everytime collection change so it will run the collection function
     .onSnapshot((collection)=>{ //snapshot function takes an observer. Its async as default so it will wait
       //Create an object that only lives here. This is read method
       const updatedNotes = collection.docs.map((doc)=> {
@@ -24,6 +25,7 @@ export default function NotesScreen({ navigation, route }) {
           ...doc.data(),
           id:doc.id,
         }
+        //setCount and count clones the cat(for example) add 1 n throws away the original cat
         return noteObject
       });
       //Map is a built in firebase/javascript function goes through every item, 
