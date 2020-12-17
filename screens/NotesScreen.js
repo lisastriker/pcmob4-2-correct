@@ -8,15 +8,24 @@ import {
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import firebase from "../database/firebaseDB";
+
 export default function NotesScreen({ navigation, route }) {
   const [notes, setNotes] = useState([]);
   const db = firebase.firestore().collection("todos")
   //Load up firebase database on start
   //Snapshot keeps everything synced -- no need to do it again
   useEffect(()=>{
-    const unsubscribe = db //snapshot has a listener, a function that runs everytime collection change so it will run the collection function
+    const unsubscribe = db
+    .orderBy("created") //snapshot has a listener, a function that runs everytime collection change so it will run the collection function
     .onSnapshot((collection)=>{ //snapshot function takes an observer. Its async as default so it will wait
-      const updatedNotes = collection.docs.map((doc)=> doc.data());
+      //Create an object that only lives here. This is read method
+      const updatedNotes = collection.docs.map((doc)=> {
+        const noteObject = {
+          ...doc.data(),
+          id:doc.id,
+        }
+        return noteObject
+      });
       //Map is a built in firebase/javascript function goes through every item, 
       //document is a json wrapped up. Each doc object has lots of stuff
       //doc.data extracts json from the document
@@ -53,11 +62,11 @@ export default function NotesScreen({ navigation, route }) {
       const newNote = {
         title: route.params.text,
         done: false,
-        id: notes.length.toString(),
+        created: firebase.firestore.FieldValue.serverTimestamp()
       };
-      firebase.firestore().collection("todos").add({
+      firebase.firestore().collection("todos").add(
         newNote, //Because this creates an item newNote with the properties
-      });
+      );
       console.log(newNote)
     }
   }, [route.params?.text]);
@@ -68,9 +77,11 @@ export default function NotesScreen({ navigation, route }) {
 
   // This deletes an individual note
   function deleteNote(id) {
-    firebase
-    .firestore()
-    .collection("todos").onSnapshot((snapshot)=>{
+    console.log(id)
+    db.doc(id).delete();
+
+    
+    /*  db.onSnapshot((snapshot)=>{
       //doc.id = document unique string. doc.data().newNote.id is given like 0 or 1
       snapshot.docs.forEach(doc=>{
         if(id==doc.data().newNote.id){
@@ -79,7 +90,7 @@ export default function NotesScreen({ navigation, route }) {
           console.log(id)
         }
       })
-    });
+    }); */
 
     // To delete that item, we filter out the item we don't wan
     //if you want delete no 5, it filters for everything else n presents it
@@ -100,8 +111,8 @@ export default function NotesScreen({ navigation, route }) {
           justifyContent: "space-between",
         }}
       >
-        <Text>{item.newNote.title}</Text>
-        <TouchableOpacity onPress={() => deleteNote(item.newNote.id)}>
+        <Text>{item.title}</Text>
+        <TouchableOpacity onPress={() => deleteNote(item.id)}>
           <Ionicons name="trash" size={16} color="#944" />
         </TouchableOpacity>
       </View>
@@ -114,7 +125,7 @@ export default function NotesScreen({ navigation, route }) {
         data={notes}
         renderItem={renderItem}
         style={{ width: "100%" }}
-        keyExtractor={(item) => item.newNote.id}
+        keyExtractor={(item) => item.id}
       />
     </View>
   );
