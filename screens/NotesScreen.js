@@ -10,20 +10,21 @@ import { Ionicons } from "@expo/vector-icons";
 import firebase from "../database/firebaseDB";
 export default function NotesScreen({ navigation, route }) {
   const [notes, setNotes] = useState([]);
-
+  const db = firebase.firestore().collection("todos")
   //Load up firebase database on start
   //Snapshot keeps everything synced -- no need to do it again
   useEffect(()=>{
-    const unsubscribe = firebase
-    .firestore()
-    .collection("todos")
-    .onSnapshot((snapshot)=>{
-      const updatedNotes = snapshot.docs.map((doc)=> doc.data());
+    const unsubscribe = db //snapshot has a listener, a function that runs everytime collection change so it will run the collection function
+    .onSnapshot((collection)=>{ //snapshot function takes an observer. Its async as default so it will wait
+      const updatedNotes = collection.docs.map((doc)=> doc.data());
+      //Map is a built in firebase/javascript function goes through every item, 
+      //document is a json wrapped up. Each doc object has lots of stuff
+      //doc.data extracts json from the document
       setNotes(updatedNotes)
       console.log(updatedNotes)
     });
     return()=>{
-      unsubscribe();
+      unsubscribe(); //Just stop code from running in background at end
     }
   },[])
 
@@ -79,7 +80,7 @@ export default function NotesScreen({ navigation, route }) {
         }
       })
     });
-    //firebase.firestore().collection("todos").doc("").delete()
+
     // To delete that item, we filter out the item we don't wan
     //if you want delete no 5, it filters for everything else n presents it
     //setNotes(notes.filter((item) => item.id !== id));
